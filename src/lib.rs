@@ -14,7 +14,9 @@ impl FromStr for Sheet {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // BUG: not increase
         let mut width = 0;
+        // BUG: not increase
         let mut height = 0;
 
         let table: HashMap<Pos, String> = s
