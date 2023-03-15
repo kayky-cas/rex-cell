@@ -16,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Run check
+      run: cargo check
     - name: Run formatter
       run: cargo fmt
     - name: Build
