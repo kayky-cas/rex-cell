@@ -29,13 +29,35 @@ impl FromStr for Sheet {
             .flatten()
             .collect();
 
-        let width = (table.iter().map(|(Pos(c, _), _)| *c as u8).max().unwrap() - b'A') as usize;
-        let height = table.iter().map(|(Pos(_, r), _)| *r).max().unwrap();
+        let width =
+            (table.iter().map(|(Pos(c, _), _)| *c as u8).max().unwrap() - b'A') as usize + 1;
+        let height = table.iter().map(|(Pos(_, r), _)| *r).max().unwrap() + 1;
 
         Ok(Sheet {
             table,
             width,
             height,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Sheet;
+
+    #[test]
+    fn input_with_6_width() {
+        let input = ";;;;;".to_owned();
+        let sheet: Sheet = input.parse().expect("Not possible to parse!");
+
+        assert!(sheet.width == 6)
+    }
+
+    #[test]
+    fn input_with_6_height() {
+        let input = ";\n;\n;\n;\n;\n;".to_owned();
+        let sheet: Sheet = input.parse().expect("Not possible to parse!");
+
+        assert!(sheet.height == 6)
     }
 }
