@@ -1,11 +1,30 @@
 use std::{collections::HashMap, str::FromStr};
 
+#[derive(Debug)]
+pub enum Cell {
+    Text(String),
+    Number(f64),
+    Expression,
+}
+
+impl FromStr for Cell {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(x) = s.parse::<f64>() {
+            return Ok(Cell::Number(x));
+        }
+
+        return Ok(Cell::Text(s.to_owned()));
+    }
+}
+
 #[derive(PartialEq, Eq, Hash, Debug)]
 pub struct Pos(char, usize);
 
 #[derive(Debug)]
 pub struct Sheet {
-    pub table: HashMap<Pos, String>,
+    pub table: HashMap<Pos, Cell>,
     pub width: usize,
     pub height: usize,
 }
@@ -14,7 +33,7 @@ impl FromStr for Sheet {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let table: HashMap<Pos, String> = s
+        let table: HashMap<Pos, Cell> = s
             .lines()
             .enumerate()
             .flat_map(|(row, row_content)| {
@@ -23,7 +42,7 @@ impl FromStr for Sheet {
                         return None;
                     }
                     let col = char::from_u32(col as u32 + b'A' as u32)?;
-                    return Some((Pos(col, row), cell.trim().to_owned()));
+                    return Some((Pos(col, row), cell.trim().to_owned().parse().unwrap()));
                 })
             })
             .flatten()
@@ -43,7 +62,7 @@ impl FromStr for Sheet {
 
 #[cfg(test)]
 mod tests {
-    use crate::Sheet;
+    use crate::{Cell, Sheet};
 
     #[test]
     fn input_with_6_width() {
@@ -59,5 +78,29 @@ mod tests {
         let sheet: Sheet = input.parse().expect("Not possible to parse!");
 
         assert!(sheet.height == 6)
+    }
+
+    #[test]
+    fn cell_number_from_str() {
+        let cell: Cell = "10".parse().expect("Not possible to convert to a cell.");
+
+        match cell {
+            Cell::Text(_) => panic!("Not a text"),
+            Cell::Number(x) => assert_eq!(x, 10.0),
+            Cell::Expression => panic!("Not a Expression"),
+        }
+    }
+
+    #[test]
+    fn cell_text_from_str() {
+        let cell: Cell = "Carlos"
+            .parse()
+            .expect("Not possible to convert to a cell.");
+
+        match cell {
+            Cell::Text(s) => assert_eq!("Carlos", s),
+            Cell::Number(_) => panic!("Not a text"),
+            Cell::Expression => panic!("Not a Expression"),
+        }
     }
 }
