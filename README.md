@@ -1,5 +1,5 @@
 # Rex Cell
-Rex Cell is a command line csv reader, that can calculate expressions.
+Rex Cell is a command line csv reader made in rust, that can calculate expressions.
 
 ### Objectives
 * [ ] Read the csv file input
