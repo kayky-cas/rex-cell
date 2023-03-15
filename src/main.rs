@@ -1,6 +1,7 @@
-use std::{collections::HashMap, env, fs, str::FromStr};
+use std::{env, fs};
 
 use anyhow::anyhow;
+use rex_cell::Sheet;
 
 // Usage: ./run ./inputs/input1.csv
 fn main() -> anyhow::Result<()> {
@@ -17,6 +18,8 @@ fn main() -> anyhow::Result<()> {
 
     let input_name = dbg!(&args[0]);
     let buffer = dbg!(fs::read_to_string(input_name)?);
+
+    let sheet: Sheet = dbg!(buffer.parse()?);
 
     Ok(())
 }
