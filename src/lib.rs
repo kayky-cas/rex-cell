@@ -14,33 +14,23 @@ impl FromStr for Sheet {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // BUG: not increase
-        let mut width = 0;
-        // BUG: not increase
-        let mut height = 0;
-
         let table: HashMap<Pos, String> = s
-            .split('\n')
+            .lines()
             .enumerate()
             .flat_map(|(row, row_content)| {
-                row_content
-                    .split(";")
-                    .enumerate()
-                    .map(move |(col, content)| {
-                        if col > width {
-                            width = col;
-                        }
-
-                        if row > height {
-                            height = col;
-                        }
-
-                        let col = char::from_u32(col as u32 + b'A' as u32)?;
-                        return Some((Pos(col, row), content.trim().to_owned()));
-                    })
+                row_content.split(";").enumerate().map(move |(col, cell)| {
+                    if col > 25 {
+                        return None;
+                    }
+                    let col = char::from_u32(col as u32 + b'A' as u32)?;
+                    return Some((Pos(col, row), cell.trim().to_owned()));
+                })
             })
             .flatten()
             .collect();
+
+        let width = (table.iter().map(|(Pos(c, _), _)| *c as u8).max().unwrap() - b'A') as usize;
+        let height = table.iter().map(|(Pos(_, r), _)| *r).max().unwrap();
 
         Ok(Sheet {
             table,
