@@ -1,7 +1,7 @@
 use std::{collections::HashMap, str::FromStr};
 
 #[derive(PartialEq, Eq, Hash, Debug)]
-pub struct Pos(usize, usize);
+pub struct Pos(char, usize);
 
 #[derive(Debug)]
 pub struct Sheet {
@@ -35,9 +35,11 @@ impl FromStr for Sheet {
                             height = col;
                         }
 
-                        return (Pos(row, col), content.trim().to_owned());
+                        let col = char::from_u32(col as u32 + b'A' as u32)?;
+                        return Some((Pos(col, row), content.trim().to_owned()));
                     })
             })
+            .flatten()
             .collect();
 
         Ok(Sheet {
