@@ -17,9 +17,9 @@ fn main() -> anyhow::Result<()> {
     }
 
     let input_name = dbg!(&args[0]);
-    let buffer = dbg!(fs::read_to_string(input_name)?);
+    let buffer = fs::read_to_string(input_name)?;
 
-    let sheet: Sheet = dbg!(buffer.parse()?);
+    let _: Sheet = dbg!(buffer.parse()?);
 
     Ok(())
 }

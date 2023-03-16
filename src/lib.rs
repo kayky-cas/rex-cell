@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, fmt::Debug, str::FromStr};
 
 #[derive(Debug)]
 pub enum Cell {
@@ -20,13 +20,43 @@ impl FromStr for Cell {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
-pub struct Pos(char, usize);
+pub struct Pos(usize, usize);
 
-#[derive(Debug)]
 pub struct Sheet {
     pub table: HashMap<Pos, Cell>,
     pub width: usize,
     pub height: usize,
+}
+
+impl Debug for Sheet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "\n{}", self.str_table())
+    }
+}
+
+impl Sheet {
+    fn str_table(&self) -> String {
+        let mut str_table = String::new();
+
+        for row in 0..self.height {
+            for col in 0..self.width {
+                let cell = self.table.get(&Pos(col, row));
+
+                //TODO: this is really bad
+                match cell {
+                    None => str_table.push_str(" "),
+                    Some(cell) => match cell {
+                        Cell::Text(text) => str_table.push_str(&format!(" {text}")),
+                        Cell::Number(number) => str_table.push_str(&format!(" {number}")),
+                        Cell::Expression => todo!(),
+                    },
+                }
+            }
+            str_table.push_str("\n");
+        }
+
+        return str_table;
+    }
 }
 
 impl FromStr for Sheet {
@@ -41,15 +71,13 @@ impl FromStr for Sheet {
                     if col > 25 {
                         return None;
                     }
-                    let col = char::from_u32(col as u32 + b'A' as u32)?;
                     return Some((Pos(col, row), cell.trim().to_owned().parse().unwrap()));
                 })
             })
             .flatten()
             .collect();
 
-        let width =
-            (table.iter().map(|(Pos(c, _), _)| *c as u8).max().unwrap() - b'A') as usize + 1;
+        let width = table.iter().map(|(Pos(c, _), _)| *c).max().unwrap() + 1;
         let height = table.iter().map(|(Pos(_, r), _)| *r).max().unwrap() + 1;
 
         Ok(Sheet {
