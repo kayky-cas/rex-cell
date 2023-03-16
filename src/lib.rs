@@ -110,7 +110,7 @@ mod tests {
         let input = ";;;;;".to_owned();
         let sheet: Sheet = input.parse().expect("Not possible to parse!");
 
-        assert!(sheet.width == 6)
+        assert_eq!(sheet.width, 6)
     }
 
     #[test]
@@ -118,7 +118,7 @@ mod tests {
         let input = ";\n;\n;\n;\n;\n;".to_owned();
         let sheet: Sheet = input.parse().expect("Not possible to parse!");
 
-        assert!(sheet.height == 6)
+        assert_eq!(sheet.height, 6)
     }
 
     #[test]
@@ -134,12 +134,12 @@ mod tests {
 
     #[test]
     fn cell_text_from_str() {
-        let cell: Cell = "Carlos"
+        let cell: Cell = "Suarez"
             .parse()
             .expect("Not possible to convert to a cell.");
 
         match cell {
-            Cell::Text(s) => assert_eq!("Carlos", s),
+            Cell::Text(s) => assert_eq!("Suarez", s),
             Cell::Number(_) => panic!("Not a text"),
             Cell::Expression => panic!("Not a Expression"),
         }
