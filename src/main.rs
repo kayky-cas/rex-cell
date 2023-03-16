@@ -3,7 +3,6 @@ use std::{env, fs};
 use anyhow::anyhow;
 use rex_cell::Sheet;
 
-// Usage: ./run ./inputs/input1.csv
 fn main() -> anyhow::Result<()> {
     let program_name = env::args().nth(0).ok_or(anyhow!("Invalid program name"))?;
 

@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fmt::Debug, str::FromStr};
 
+use anyhow::anyhow;
+
 #[derive(Debug)]
 pub enum Cell {
     Text(String),
@@ -20,12 +22,12 @@ impl FromStr for Cell {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
-pub struct Pos(usize, usize);
+pub struct Pos(u16, u16);
 
 pub struct Sheet {
     pub table: HashMap<Pos, Cell>,
-    pub width: usize,
-    pub height: usize,
+    pub width: u16,
+    pub height: u16,
 }
 
 impl Debug for Sheet {
@@ -41,15 +43,16 @@ impl Sheet {
         for row in 0..self.height {
             for col in 0..self.width {
                 let cell = self.table.get(&Pos(col, row));
+                str_table.push_str(" ");
 
                 //TODO: this is really bad
                 match cell {
-                    None => str_table.push_str(" "),
                     Some(cell) => match cell {
-                        Cell::Text(text) => str_table.push_str(&format!(" {text}")),
-                        Cell::Number(number) => str_table.push_str(&format!(" {number}")),
+                        Cell::Text(text) => str_table.push_str(text),
+                        Cell::Number(number) => str_table.push_str(&format!("{number}")),
                         Cell::Expression => todo!(),
                     },
+                    None => {}
                 }
             }
             str_table.push_str("\n");
@@ -67,18 +70,28 @@ impl FromStr for Sheet {
             .lines()
             .enumerate()
             .flat_map(|(row, row_content)| {
-                row_content.split(";").enumerate().map(move |(col, cell)| {
-                    if col > 25 {
-                        return None;
-                    }
-                    return Some((Pos(col, row), cell.trim().to_owned().parse().unwrap()));
+                row_content.split(';').enumerate().map(move |(col, cell)| {
+                    let cell = cell.trim().parse().ok()?;
+                    Some((Pos(col as u16, row as u16), cell))
                 })
             })
             .flatten()
             .collect();
 
-        let width = table.iter().map(|(Pos(c, _), _)| *c).max().unwrap() + 1;
-        let height = table.iter().map(|(Pos(_, r), _)| *r).max().unwrap() + 1;
+        // TODO: find a better way to do that
+        let width = table
+            .iter()
+            .map(|(pos, _)| pos.0)
+            .max()
+            .ok_or(anyhow!("Empty table."))?
+            + 1;
+
+        let height = table
+            .iter()
+            .map(|(pos, _)| pos.1)
+            .max()
+            .ok_or(anyhow!("Empty table."))?
+            + 1;
 
         Ok(Sheet {
             table,
