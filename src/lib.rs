@@ -1,6 +1,4 @@
-use std::{collections::HashMap, fmt::Debug, str::FromStr};
-
-use anyhow::anyhow;
+use std::{cmp::max, collections::HashMap, fmt::Debug, str::FromStr};
 
 #[derive(Debug)]
 pub enum Cell {
@@ -22,12 +20,12 @@ impl FromStr for Cell {
 }
 
 #[derive(PartialEq, Eq, Hash, Debug)]
-pub struct Pos(u16, u16);
+pub struct Pos(usize, usize);
 
 pub struct Sheet {
     pub table: HashMap<Pos, Cell>,
-    pub width: u16,
-    pub height: u16,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl Debug for Sheet {
@@ -60,6 +58,8 @@ impl Sheet {
 
         return str_table;
     }
+
+    fn gen_expression(expression: &str) {}
 }
 
 impl FromStr for Sheet {
@@ -72,31 +72,24 @@ impl FromStr for Sheet {
             .flat_map(|(row, row_content)| {
                 row_content.split(';').enumerate().map(move |(col, cell)| {
                     let cell = cell.trim().parse().ok()?;
-                    Some((Pos(col as u16, row as u16), cell))
+                    Some((Pos(col, row), cell))
                 })
             })
             .flatten()
             .collect();
 
-        // TODO: find a better way to do that
-        let width = table
-            .iter()
-            .map(|(pos, _)| pos.0)
-            .max()
-            .ok_or(anyhow!("Empty table."))?
-            + 1;
+        let mut width = 0usize;
+        let mut height = 0usize;
 
-        let height = table
-            .iter()
-            .map(|(pos, _)| pos.1)
-            .max()
-            .ok_or(anyhow!("Empty table."))?
-            + 1;
+        for Pos(col, row) in table.keys() {
+            width = max(width, *col);
+            height = max(height, *row);
+        }
 
         Ok(Sheet {
             table,
-            width,
-            height,
+            width: width + 1,
+            height: height + 1,
         })
     }
 }
