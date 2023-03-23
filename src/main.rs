@@ -4,6 +4,8 @@ use anyhow::anyhow;
 use rex_cell::Sheet;
 
 fn main() -> anyhow::Result<()> {
+    assert!(' '.is_ascii_alphanumeric() || ' '.is_ascii_alphabetic());
+
     let program_name = env::args().nth(0).ok_or(anyhow!("Invalid program name"))?;
 
     let args: Vec<_> = env::args().skip(1).collect();

@@ -1,5 +1,19 @@
 use std::{cmp::max, collections::HashMap, fmt::Debug, str::FromStr};
 
+use anyhow::anyhow;
+
+struct Lexer<'a> {
+    bytes: &'a [u8],
+}
+
+impl<'a> From<&'a str> for Lexer<'a> {
+    fn from(value: &'a str) -> Self {
+        Self {
+            bytes: value.as_bytes(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum Cell {
     Text(String),
@@ -12,10 +26,44 @@ impl FromStr for Cell {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Ok(x) = s.parse::<f64>() {
-            return Ok(Cell::Number(x));
-        }
+            Ok(Cell::Number(x))
+        } else if s.starts_with('=') {
+            let buffer = s[1..].as_bytes();
 
-        return Ok(Cell::Text(s.to_owned()));
+            if buffer.is_empty() {
+                return Err(anyhow!("Empty expression"));
+            }
+
+            let mut start = 0usize;
+            let mut cursor = 0usize;
+
+            let mut is_counting = false;
+
+            let mut lexers = Vec::new();
+
+            while cursor < buffer.len() {
+                let cursor_buf = buffer[cursor];
+
+                if cursor_buf.is_ascii_alphabetic() || cursor_buf.is_ascii_alphanumeric() {
+                    if !is_counting {
+                        is_counting = true;
+                        start = cursor;
+                    }
+                } else {
+                    let lexer = Lexer {
+                        bytes: &buffer[start..cursor],
+                    };
+                    lexers.push(lexer);
+                    is_counting = false;
+                }
+
+                cursor += 1;
+            }
+
+            Ok(Cell::Expression)
+        } else {
+            Ok(Cell::Text(s.to_owned()))
+        }
     }
 }
 
@@ -43,12 +91,11 @@ impl Sheet {
                 let cell = self.table.get(&Pos(col, row));
                 str_table.push_str(" ");
 
-                //TODO: this is really bad
                 match cell {
                     Some(cell) => match cell {
                         Cell::Text(text) => str_table.push_str(text),
                         Cell::Number(number) => str_table.push_str(&format!("{number}")),
-                        Cell::Expression => todo!(),
+                        Cell::Expression => str_table.push_str("expression"),
                     },
                     None => {}
                 }
@@ -58,8 +105,6 @@ impl Sheet {
 
         return str_table;
     }
-
-    fn gen_expression(expression: &str) {}
 }
 
 impl FromStr for Sheet {
@@ -96,7 +141,7 @@ impl FromStr for Sheet {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Cell, Sheet};
+    use crate::{Cell, Lexer, Sheet};
 
     #[test]
     fn input_with_6_width() {
@@ -136,5 +181,59 @@ mod tests {
             Cell::Number(_) => panic!("Not a text"),
             Cell::Expression => panic!("Not a Expression"),
         }
+    }
+
+    #[test]
+    fn lexers_from_buffer() {
+        let buffer = "A1 + A3+135".as_bytes();
+
+        let mut lexers: Vec<Lexer> = Vec::new();
+
+        let mut cursor = 0usize;
+        let mut start = 0usize;
+
+        let mut is_counting = false;
+
+        while cursor < buffer.len() {
+            let byte = buffer[cursor];
+
+            if byte.is_ascii_alphabetic() || byte.is_ascii_alphanumeric() {
+                if !is_counting {
+                    is_counting = true;
+                    start = cursor;
+                }
+
+                if cursor == buffer.len() - 1 {
+                    lexers.push(Lexer {
+                        bytes: &buffer[start..],
+                    });
+                }
+            } else {
+                if is_counting {
+                    lexers.push(Lexer {
+                        bytes: &buffer[start..(cursor)],
+                    });
+
+                    is_counting = false;
+                }
+
+                if byte != b' ' {
+                    lexers.push(Lexer {
+                        bytes: &buffer[cursor..(cursor + 1)],
+                    });
+                    is_counting = false;
+                }
+            }
+
+            cursor += 1;
+        }
+
+        println!("=====================");
+
+        for l in lexers {
+            println!("{}", std::str::from_utf8(l.bytes).unwrap());
+        }
+
+        assert!(false)
     }
 }
