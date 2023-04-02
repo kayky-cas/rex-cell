@@ -1,23 +1,10 @@
 use std::{cmp::max, collections::HashMap, fmt::Debug, str::FromStr};
 
-use anyhow::anyhow;
-
-struct Lexer<'a> {
-    bytes: &'a [u8],
-}
-
-impl<'a> From<&'a str> for Lexer<'a> {
-    fn from(value: &'a str) -> Self {
-        Self {
-            bytes: value.as_bytes(),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum Cell {
     Text(String),
     Number(f64),
+    Date,
     Expression,
 }
 
@@ -27,40 +14,6 @@ impl FromStr for Cell {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Ok(x) = s.parse::<f64>() {
             Ok(Cell::Number(x))
-        } else if s.starts_with('=') {
-            let buffer = s[1..].as_bytes();
-
-            if buffer.is_empty() {
-                return Err(anyhow!("Empty expression"));
-            }
-
-            let mut start = 0usize;
-            let mut cursor = 0usize;
-
-            let mut is_counting = false;
-
-            let mut lexers = Vec::new();
-
-            while cursor < buffer.len() {
-                let cursor_buf = buffer[cursor];
-
-                if cursor_buf.is_ascii_alphabetic() || cursor_buf.is_ascii_alphanumeric() {
-                    if !is_counting {
-                        is_counting = true;
-                        start = cursor;
-                    }
-                } else {
-                    let lexer = Lexer {
-                        bytes: &buffer[start..cursor],
-                    };
-                    lexers.push(lexer);
-                    is_counting = false;
-                }
-
-                cursor += 1;
-            }
-
-            Ok(Cell::Expression)
         } else {
             Ok(Cell::Text(s.to_owned()))
         }
@@ -83,6 +36,7 @@ impl Debug for Sheet {
 }
 
 impl Sheet {
+    // BUG:this isn't a bug but its really bad
     fn str_table(&self) -> String {
         let mut str_table = String::new();
 
@@ -95,7 +49,8 @@ impl Sheet {
                     Some(cell) => match cell {
                         Cell::Text(text) => str_table.push_str(text),
                         Cell::Number(number) => str_table.push_str(&format!("{number}")),
-                        Cell::Expression => str_table.push_str("expression"),
+                        Cell::Expression => todo!(),
+                        Cell::Date => todo!(),
                     },
                     None => {}
                 }
@@ -111,37 +66,35 @@ impl FromStr for Sheet {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let table: HashMap<Pos, Cell> = s
-            .lines()
-            .enumerate()
-            .flat_map(|(row, row_content)| {
-                row_content.split(';').enumerate().map(move |(col, cell)| {
-                    let cell = cell.trim().parse().ok()?;
-                    Some((Pos(col, row), cell))
-                })
-            })
-            .flatten()
-            .collect();
+        let mut table = HashMap::new();
 
-        let mut width = 0usize;
-        let mut height = 0usize;
+        let mut width = 0;
+        let mut height = 0;
 
-        for Pos(col, row) in table.keys() {
-            width = max(width, *col);
-            height = max(height, *row);
+        for (row, row_content) in s.lines().enumerate() {
+            for (col, cell) in row_content.split(';').enumerate() {
+                width = max(width, col);
+                height = max(height, row);
+
+                let cell = cell.trim().parse()?;
+                table.insert(Pos(col, row), cell);
+            }
         }
+
+        width += 1;
+        height += 1;
 
         Ok(Sheet {
             table,
-            width: width + 1,
-            height: height + 1,
+            width,
+            height,
         })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{Cell, Lexer, Sheet};
+    use crate::{Cell, Sheet};
 
     #[test]
     fn input_with_6_width() {
@@ -167,6 +120,7 @@ mod tests {
             Cell::Text(_) => panic!("Not a text"),
             Cell::Number(x) => assert_eq!(x, 10.0),
             Cell::Expression => panic!("Not a Expression"),
+            Cell::Date => unimplemented!(),
         }
     }
 
@@ -180,60 +134,7 @@ mod tests {
             Cell::Text(s) => assert_eq!("Suarez", s),
             Cell::Number(_) => panic!("Not a text"),
             Cell::Expression => panic!("Not a Expression"),
+            Cell::Date => unimplemented!(),
         }
-    }
-
-    #[test]
-    fn lexers_from_buffer() {
-        let buffer = "A1 + A3+135".as_bytes();
-
-        let mut lexers: Vec<Lexer> = Vec::new();
-
-        let mut cursor = 0usize;
-        let mut start = 0usize;
-
-        let mut is_counting = false;
-
-        while cursor < buffer.len() {
-            let byte = buffer[cursor];
-
-            if byte.is_ascii_alphabetic() || byte.is_ascii_alphanumeric() {
-                if !is_counting {
-                    is_counting = true;
-                    start = cursor;
-                }
-
-                if cursor == buffer.len() - 1 {
-                    lexers.push(Lexer {
-                        bytes: &buffer[start..],
-                    });
-                }
-            } else {
-                if is_counting {
-                    lexers.push(Lexer {
-                        bytes: &buffer[start..(cursor)],
-                    });
-
-                    is_counting = false;
-                }
-
-                if byte != b' ' {
-                    lexers.push(Lexer {
-                        bytes: &buffer[cursor..(cursor + 1)],
-                    });
-                    is_counting = false;
-                }
-            }
-
-            cursor += 1;
-        }
-
-        println!("=====================");
-
-        for l in lexers {
-            println!("{}", std::str::from_utf8(l.bytes).unwrap());
-        }
-
-        assert!(false)
     }
 }
