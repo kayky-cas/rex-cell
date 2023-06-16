@@ -2,13 +2,13 @@ use anyhow::Result;
 
 #[derive(Debug, PartialEq)]
 enum ExpressionToken {
-    Number(isize),
-    Plus,
-    Minus,
-    Multiply,
-    Divide,
-    LeftParenthesis,
-    RightParenthesis,
+    Number(i64),
+    Plus(char),
+    Minus(char),
+    Multiply(char),
+    Divide(char),
+    LeftParenthesis(char),
+    RightParenthesis(char),
     Identifier(String),
 }
 
